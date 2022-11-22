@@ -110,6 +110,13 @@ fn run() -> anyhow::Result<i32> {
                 .help("Activate all available features"),
         )
         .arg(
+            Arg::with_name("si")
+                .long("start-index")
+                .takes_value(true)
+                .value_name("START_INDEX")
+                .help("zero based index of matching start points when multiple start points found"),
+        )
+        .arg(
             Arg::with_name("START").help("consider only the call graph that starts from this node"),
         )
         .get_matches();
@@ -1075,8 +1082,18 @@ fn run() -> anyhow::Result<i32> {
                 .collect::<Vec<_>>();
 
             if hits.len() > 1 {
-                error!("multiple matches for `{}`: {:?}", start, hits);
-                None
+
+                if let Some(start_index) = matches.value_of("si") {
+                    let index: usize = start_index.parse().unwrap();
+
+                    let selected = hits.get(index);
+                    eprintln!("multiple matches for `{}`: {:?}, using: {:?}", start, hits, selected.unwrap());
+
+                    selected.map(|key| indices[*key])
+                } else {
+                    error!("multiple matches for `{}`: {:?}", start, hits);
+                    None
+                }
             } else {
                 hits.first().map(|key| indices[*key])
             }
